@@ -1,0 +1,46 @@
+CRÉDITOS DE ASSETS — MANI FIGHT
+
+SPRITES DO ELENCO ATUAL
+  Gerados por IA a partir das descrições/fotos da equipe (assets/<id>/folha.png),
+  recortados e remontados em strips por tools/sprite-tool.js (plano.json em cada pasta)
+  ou pelo editor.html. Uso interno.
+
+SPRITES DE RESERVA (CC0, LuizMelo — https://luizmelo.itch.io/) — não usados no elenco atual
+  assets/huntress        -> Huntress                -> assets/chars/carol   (loira, pele clara, rabo de cavalo)
+  assets/warrior         -> Medieval Warrior Pack 2 -> assets/chars/carlos  (pele negra, sem barba, olhos verdes, cyber neon)
+  assets/evil-wizard     -> Evil Wizard             -> assets/chars/italo   (mago, manto azul, cabelo preto)
+  assets/kenji           -> Martial Hero 2          -> assets/chars/raul    (ninja, máscara, pele indiana)
+  assets/thief           -> Medieval Warrior Pack 3 -> assets/chars/luis    (atleta, camisa lima, óculos, tênis laranja)
+  assets/martial-hero    -> Martial Hero            -> assets/chars/gabriel (sensei, cabelo longo preto, chapéu, gi branco)
+  assets/medieval-king   -> Medieval King Pack 2    -> assets/chars/tadeus  (investigador, sobretudo, chapéu)
+  assets/fantasy-warrior -> Fantasy Warrior         (não usado no elenco atual)
+  Recolor + acessórios: node tools/sprite-tool.js recolor-all tools/recolors.json [id]
+
+FONTE
+  Press Start 2P — SIL Open Font License (assets/fonts/OFL.txt)
+
+SONS
+  Kenney (https://kenney.nl) — CC0
+    assets/sfx/announcer  Voiceover Pack: Fighter (locutor: round 1, fight, you win...)
+    assets/sfx/impact     Impact Sounds (socos, passos, metal)
+    assets/sfx/ui         Interface Sounds (menus)
+  Cici Fyre (https://cicifyre.itch.io/) — "Female RPG Voice Starter Pack" — CC0
+    assets/sfx/voice/type1..3 (attack, damaged, jump)
+  Kenney — RPG Audio (facas, tecido, madeira), Music Jingles (jingle de vitória) — CC0
+    assets/sfx/weapon/*, assets/sfx/jingle/*
+  StarNinjas (OpenGameArt) — "20 sword sound effects" — CC0 — assets/sfx/weapon/sword_*.ogg
+  rubberduck (OpenGameArt) — "80 CC0 RPG SFX" — CC0 — assets/sfx/weapon/blade_*, item_wood_*, metal_*
+  remaxim (OpenGameArt) — "3 melee sounds" — CC0 — assets/sfx/weapon/melee.wav, animal.wav, swordhit.wav
+  Julien Matthey via diligentcircle (OpenGameArt) — "Fireball 1" — CC0 — assets/sfx/weapon/fireball.wav
+  imadeit (OpenGameArt) — "Single bee sound" — CC-BY 3.0 (atribuição obrigatória) — assets/sfx/weapon/bee.ogg
+  tim-rockk (OpenGameArt) — "Game Voice" — CC0 — assets/sfx/announcer2/* (Knockout, Finish it, Victory, Get ready...)
+
+MÚSICA (assets/music)
+  kreznykov (OpenGameArt) — "8-bit style music loops pack" — CC-BY 4.0 (atribuição obrigatória)
+    title.mp3 (main_theme), select.mp3 (charselect), win.mp3 (zone1)
+  pmiller (OpenGameArt) — "Chiptune battle music" — CC0 — fight1.ogg
+  wolfgang (OpenGameArt) — "8-bit battle loop" — CC0 — fight2.ogg
+  SketchyLogic (OpenGameArt) — "NES Shooter Music" — CC0 — final.ogg (Boss)
+  Centurion of War (OpenGameArt) — "Charge" — CC0 — versus.ogg
+  Vozes masculinas = mesmas amostras com playbackRate reduzido (sem preservar tom).
+  Ajuste por personagem em CHARACTERS: voz.tipo (1-3) e voz.frequencia (0 = muda).

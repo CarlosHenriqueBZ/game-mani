@@ -1,0 +1,17 @@
+{
+  "arquivo": "folha.png",
+  "saida": "./",
+  "celula": [260, 180],
+  "pes": 172,
+  "alphaMin": 40,
+  "animacoes": {
+    "Idle.png":    { "linha": 0, "quadros": [0, 1, 2], "dividir": { "1": 2, "2": 3 } },
+    "Run.png":     { "linha": 1, "quadros": [0, 1, 2, 3, 4, 5, 6, 7] },
+    "Jump.png":    { "linha": 2, "quadros": [0], "dividir": { "0": 2 } },
+    "Fall.png":    { "linha": 2, "quadros": [1, 2] },
+    "Attack1.png": { "linha": 3, "quadros": [0, 1, 2, 3], "dividir": { "3": 2 } },
+    "Attack2.png": { "linha": 4, "quadros": [0, 1, 2, 3, 4, 5, 6, 7] },
+    "TakeHit.png": { "linha": 5, "quadros": [0, 1, 2] },
+    "Death.png":   { "linha": 5, "quadros": [3, 4, 5, 6, 7] }
+  }
+}

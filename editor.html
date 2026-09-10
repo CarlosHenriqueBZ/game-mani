@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<!--
+  MANI FIGHT — Editor de personagem (recorte de sprites).
+  Abra direto no navegador. Sem dependências, funciona offline.
+
+  Fluxo: 1) Carregar a folha PNG gerada pela IA  2) Escolher a animação na lista
+  3) Arrastar um retângulo em cada quadro (ou "Detectar" e clicar nos blocos)
+  4) Alt+clique dentro do quadro marca o ponto dos PÉS (âncora); botão direito arrastando
+     cria uma área de exclusão (apaga pé/efeito do vizinho)  5) Preview  6) Exportar:
+  baixa um PNG por animação (strip) + projeto.json + trecho para colar em CHARACTERS.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MANI FIGHT — Editor de Personagem</title>
+<style>
+  :root { --bg:#14141a; --panel:#1d1d26; --line:#33334a; --ink:#f0f0f4; --muted:#9a9ab0; --acc:#ffd21e; --blue:#3fa0ff; --red:#ff5560; --green:#39d27a; }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:13px/1.45 system-ui, Segoe UI, Roboto, sans-serif; height:100vh; display:grid; grid-template-columns:300px 1fr 320px; grid-template-rows:48px 1fr 190px; grid-template-areas:"top top top" "left main right" "bottom bottom bottom"; }
+  header { grid-area:top; display:flex; align-items:center; gap:12px; padding:0 14px; background:var(--panel); border-bottom:1px solid var(--line); }
+  header h1 { font-size:14px; margin:0; color:var(--acc); letter-spacing:1px; }
+  header .spacer { flex:1; }
+  button, select, input[type=number], input[type=text] { font:inherit; color:var(--ink); background:#2a2a38; border:1px solid var(--line); border-radius:6px; padding:6px 10px; }
+  button { cursor:pointer; } button:hover { border-color:var(--acc); } button.primary { background:var(--acc); color:#000; border-color:#000; font-weight:600; } button.danger { color:var(--red); }
+  button:disabled { opacity:.45; cursor:default; }
+  input[type=number] { width:70px; }
+  label.file { display:inline-block; }
+  label.file input { display:none; }
+  aside { background:var(--panel); border-right:1px solid var(--line); overflow:auto; padding:12px; }
+  aside.right { grid-area:right; border-right:0; border-left:1px solid var(--line); }
+  aside.left { grid-area:left; }
+  h2 { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin:14px 0 8px; }
+  h2:first-child { margin-top:0; }
+  .anim { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; cursor:pointer; border:1px solid transparent; }
+  .anim:hover { background:#26263a; } .anim.active { border-color:var(--acc); background:#2a2a1a; }
+  .anim .n { margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .anim .req { color:var(--red); font-size:10px; }
+  .frames { display:flex; flex-wrap:wrap; gap:6px; }
+  .thumb { width:56px; height:56px; background:#0b0b10 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="4" height="4" fill="%2323232e"/><rect x="4" y="4" width="4" height="4" fill="%2323232e"/></svg>'); border:2px solid var(--line); border-radius:4px; position:relative; cursor:pointer; image-rendering:pixelated; }
+  .thumb.sel { border-color:var(--acc); }
+  .thumb span { position:absolute; left:2px; top:0; font-size:10px; color:#fff; text-shadow:0 0 2px #000; }
+  .thumb canvas { width:100%; height:100%; image-rendering:pixelated; }
+  main { grid-area:main; position:relative; overflow:hidden; background:#0b0b10; }
+  #view { position:absolute; inset:0; width:100%; height:100%; cursor:crosshair; image-rendering:pixelated; }
+  .hud { position:absolute; left:10px; top:10px; background:#000000aa; padding:6px 10px; border-radius:6px; font-size:12px; color:#ddd; pointer-events:none; white-space:pre; }
+  .drop { position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); font-size:15px; text-align:center; pointer-events:none; }
+  footer { grid-area:bottom; background:var(--panel); border-top:1px solid var(--line); display:grid; grid-template-columns:auto 1fr; gap:14px; padding:10px 14px; }
+  #preview { width:260px; height:160px; background:#111 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="8" height="8" fill="%231e1e28"/><rect x="8" y="8" width="8" height="8" fill="%231e1e28"/></svg>'); border:1px solid var(--line); image-rendering:pixelated; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; }
+  .row label { color:var(--muted); font-size:12px; }
+  textarea { width:100%; height:110px; background:#0b0b10; color:#cfe; border:1px solid var(--line); border-radius:6px; font:11px/1.4 Consolas, monospace; padding:8px; resize:vertical; }
+  .hint { color:var(--muted); font-size:11px; line-height:1.5; }
+  .links a { display:inline-block; margin:3px 6px 3px 0; color:var(--blue); }
+  kbd { background:#2a2a38; border:1px solid var(--line); border-radius:4px; padding:0 5px; font-size:11px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>MANI FIGHT · EDITOR DE PERSONAGEM</h1>
+  <label class="file"><input type="file" id="file" accept="image/png,image/*"><button type="button" onclick="document.getElementById('file').click()">Carregar folha PNG</button></label>
+  <label class="file"><input type="file" id="load-project" accept="application/json"><button type="button" onclick="document.getElementById('load-project').click()">Abrir projeto</button></label>
+  <button id="detect">Detectar quadros</button>
+  <button id="clear-detect" hidden>Limpar detecção</button>
+  <span class="spacer"></span>
+  <label>ID <input type="text" id="char-id" value="carlos" style="width:110px"></label>
+  <button id="save-project">Salvar projeto</button>
+  <button id="export" class="primary">Exportar strips</button>
+</header>
+
+<aside class="left">
+  <h2>Animações</h2>
+  <div id="anims"></div>
+  <h2>Quadros da animação <span id="cur-name"></span></h2>
+  <div class="frames" id="frames"></div>
+  <div class="row" style="margin-top:8px">
+    <button id="f-left" title="mover antes">◀ ordem</button><button id="f-right" title="mover depois">ordem ▶</button><button id="f-del" class="danger">Excluir</button>
+  </div>
+  <h2>Quadro selecionado</h2>
+  <div class="row"><label>x</label><input type="number" id="fx"><label>y</label><input type="number" id="fy"></div>
+  <div class="row"><label>w</label><input type="number" id="fw"><label>h</label><input type="number" id="fh"></div>
+  <div class="row"><label>pés (x,y)</label><input type="number" id="fpx"><input type="number" id="fpy"><button id="f-clear-anchor" title="voltar para centro inferior">auto</button></div>
+  <div class="row"><button id="f-clear-excl">Limpar exclusões</button></div>
+  <h2>Ferramentas do quadro</h2>
+  <div class="row"><label>Dividir em</label><input type="number" id="split-n" value="2" min="2" max="16"><button id="f-split">partes</button></div>
+  <p class="hint">Corta um bloco fundido nas colunas mais vazias (ignora efeitos claros) e encolhe cada parte para os pixels opacos.</p>
+  <div class="row"><label>Mover para</label><select id="move-to"></select></div>
+  <div class="row"><button id="f-move">este quadro</button><button id="f-move-rest">este e os seguintes</button></div>
+</aside>
+
+<main>
+  <canvas id="view"></canvas>
+  <div class="hud" id="hud">Carregue uma folha PNG.</div>
+  <div class="drop" id="drop">Arraste a folha PNG aqui ou use "Carregar folha PNG".<br><br>Arraste na imagem para marcar um quadro · Alt+clique = ponto dos pés · Botão direito arrastando = área de exclusão<br>Roda = zoom · Espaço/botão do meio = mover · Setas = ajustar quadro (Shift = 10px) · Delete = excluir</div>
+</main>
+
+<aside class="right">
+  <h2>Célula de saída</h2>
+  <div class="row"><label>largura</label><input type="number" id="cell-w"><label>altura</label><input type="number" id="cell-h"></div>
+  <div class="row"><label>margem</label><input type="number" id="cell-pad" value="8"><button id="cell-auto">Auto</button></div>
+  <div class="row"><label>altura no jogo (px)</label><input type="number" id="game-h" value="130"></div>
+  <h2>Preview</h2>
+  <div class="row"><label>fps</label><input type="number" id="fps" value="10" min="1" max="30"><button id="play">▶ / ❚❚</button></div>
+  <canvas id="preview" width="260" height="160"></canvas>
+  <h2>Trecho para CHARACTERS</h2>
+  <textarea id="snippet" readonly></textarea>
+  <p class="hint">Cole no lugar de <code>spritesheet: folha(...)</code> do personagem em <code>config-part.js</code>, salve os PNGs em <code>assets/&lt;id&gt;/</code> e rode <code>node build.js</code>.</p>
+</aside>
+
+<footer>
+  <div>
+    <h2>Exportação</h2>
+    <div class="links" id="links"><span class="hint">Nada exportado ainda.</span></div>
+  </div>
+  <div>
+    <h2>Dicas</h2>
+    <p class="hint">Marque os quadros na ordem de reprodução. Personagem olhando para a direita. O ponto dos pés alinha todos os quadros no mesmo chão; sem marcar, usa o centro inferior do retângulo. Quadros que se sobrepõem ao vizinho: marque só a parte boa e use exclusões (botão direito) para apagar sobras. <kbd>[</kbd> <kbd>]</kbd> trocam a animação, <kbd>1</kbd>–<kbd>9</kbd> selecionam quadro.</p>
+  </div>
+</footer>
+
+<script>
+'use strict';
+const ANIMS = [
+  ['idle', 'Idle.png', 'parado', 8, true, true], ['walk', 'Run.png', 'correr', 12, true, true],
+  ['jump', 'Jump.png', 'pulo (subindo)', 6, false, true], ['fall', 'Fall.png', 'pulo (caindo)', 6, false, false],
+  ['punch', 'Attack1.png', 'golpe leve', 12, false, true], ['kick', 'Attack2.png', 'golpe forte', 10, false, true],
+  ['block', 'Block.png', 'defesa', 1, true, false], ['hit', 'TakeHit.png', 'levar dano', 10, false, true], ['ko', 'Death.png', 'K.O.', 8, false, true]
+];
+const $ = id => document.getElementById(id);
+const view = $('view'), vctx = view.getContext('2d'), hud = $('hud'), drop = $('drop');
+const preview = $('preview'), pctx = preview.getContext('2d');
+const state = {
+  img: null, imgName: '', zoom: 1, panX: 0, panY: 0,
+  anim: 'idle', frames: Object.fromEntries(ANIMS.map(a => [a[0], []])), sel: -1,
+  detected: [], drag: null, playing: true, pt: 0, space: false
+};
+// frame = { x, y, w, h, px, py, excl: [{x,y,w,h}] }  (px,py = pés; null = auto)
+
+// ------------------------------------------------------------------ carregar imagem
+const loadFile = file => {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => { state.img = img; state.imgName = file.name; fitView(); state.detected = []; draw(); save(); };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+};
+$('file').addEventListener('change', e => loadFile(e.target.files[0]));
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) loadFile(f); else if (f && f.name.endsWith('.json')) loadProject(f); });
+
+function fitView() {
+  const r = view.getBoundingClientRect();
+  view.width = r.width; view.height = r.height;
+  if (!state.img) return;
+  state.zoom = Math.min(r.width / state.img.width, r.height / state.img.height) * .95;
+  state.panX = (r.width - state.img.width * state.zoom) / 2; state.panY = (r.height - state.img.height * state.zoom) / 2;
+}
+window.addEventListener('resize', () => { const z = state.zoom, px = state.panX, py = state.panY; fitView(); if (state.img) { state.zoom = z; state.panX = px; state.panY = py; } draw(); });
+
+// ------------------------------------------------------------------ desenho da folha
+const toImg = (sx, sy) => ({ x: (sx - state.panX) / state.zoom, y: (sy - state.panY) / state.zoom });
+const toScreen = (x, y) => ({ x: x * state.zoom + state.panX, y: y * state.zoom + state.panY });
+function draw() {
+  const c = vctx, W = view.width, H = view.height;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H);
+  drop.hidden = !!state.img;
+  if (!state.img) return;
+  // xadrez atrás da imagem
+  c.save(); c.translate(state.panX, state.panY); c.scale(state.zoom, state.zoom);
+  const cs = 16;
+  for (let y = 0; y < state.img.height; y += cs) for (let x = 0; x < state.img.width; x += cs) { c.fillStyle = ((x / cs + y / cs) % 2) ? '#23232e' : '#191922'; c.fillRect(x, y, Math.min(cs, state.img.width - x), Math.min(cs, state.img.height - y)); }
+  c.imageSmoothingEnabled = false;
+  c.drawImage(state.img, 0, 0);
+  c.restore();
+  const rect = (f, stroke, width, dash, label) => {
+    const a = toScreen(f.x, f.y);
+    c.setLineDash(dash || []); c.lineWidth = width; c.strokeStyle = stroke;
+    c.strokeRect(a.x + .5, a.y + .5, f.w * state.zoom, f.h * state.zoom);
+    if (label !== undefined) { c.fillStyle = stroke; c.font = 'bold 12px system-ui'; c.fillText(label, a.x + 4, a.y + 14); }
+  };
+  // outras animações (apagadas)
+  for (const [key] of ANIMS) if (key !== state.anim) for (const f of state.frames[key]) rect(f, 'rgba(160,160,200,.35)', 1, [4, 4]);
+  // detectados
+  for (const d of state.detected) rect(d, 'rgba(63,160,255,.8)', 1, [6, 3]);
+  // animação atual
+  state.frames[state.anim].forEach((f, i) => {
+    rect(f, i === state.sel ? '#ffd21e' : '#39d27a', i === state.sel ? 2 : 1.5, [], String(i + 1));
+    for (const e of f.excl) { const a = toScreen(e.x, e.y); c.fillStyle = 'rgba(255,85,96,.35)'; c.fillRect(a.x, a.y, e.w * state.zoom, e.h * state.zoom); }
+    const p = anchorOf(f), s = toScreen(p.x, p.y);
+    c.strokeStyle = '#ff5560'; c.lineWidth = 1.5; c.setLineDash([]);
+    c.beginPath(); c.moveTo(s.x - 6, s.y); c.lineTo(s.x + 6, s.y); c.moveTo(s.x, s.y - 6); c.lineTo(s.x, s.y + 6); c.stroke();
+  });
+  if (state.drag && state.drag.rect) rect(state.drag.rect, state.drag.excl ? '#ff5560' : '#fff', 1, [3, 3]);
+  c.setLineDash([]);
+}
+const anchorOf = f => ({ x: f.px ?? f.x + f.w / 2, y: f.py ?? f.y + f.h });
+
+// ------------------------------------------------------------------ interação
+let hover = { x: 0, y: 0 };
+view.addEventListener('contextmenu', e => e.preventDefault());
+view.addEventListener('wheel', e => {
+  e.preventDefault();
+  const before = toImg(e.offsetX, e.offsetY);
+  state.zoom = Math.max(.1, Math.min(40, state.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
+  const after = toScreen(before.x, before.y);
+  state.panX += e.offsetX - after.x; state.panY += e.offsetY - after.y;
+  draw();
+}, { passive: false });
+view.addEventListener('mousedown', e => {
+  if (!state.img) return;
+  const p = toImg(e.offsetX, e.offsetY);
+  if (e.button === 1 || state.space) { state.drag = { pan: true, sx: e.offsetX, sy: e.offsetY, px: state.panX, py: state.panY }; return; }
+  const frames = state.frames[state.anim];
+  if (e.altKey && e.button === 0) {
+    const i = frames.findIndex(f => inside(p, f));
+    if (i >= 0) { frames[i].px = Math.round(p.x); frames[i].py = Math.round(p.y); state.sel = i; refresh(); }
+    return;
+  }
+  if (e.button === 2) { // exclusão
+    const i = frames.findIndex(f => inside(p, f));
+    if (i >= 0) { state.sel = i; state.drag = { excl: true, target: frames[i], ox: p.x, oy: p.y, rect: null }; }
+    return;
+  }
+  // clique em detectado → vira quadro
+  const d = state.detected.findIndex(r => inside(p, r));
+  if (d >= 0) { addFrame({ ...state.detected[d] }); state.detected.splice(d, 1); return; }
+  // alça de redimensionar do selecionado
+  const sel = frames[state.sel];
+  if (sel) {
+    const h = handleAt(sel, p);
+    if (h) { state.drag = { resize: h, target: sel, start: { ...sel }, ox: p.x, oy: p.y }; return; }
+  }
+  const i = frames.findIndex(f => inside(p, f));
+  if (i >= 0) { state.sel = i; state.drag = { move: true, target: frames[i], ox: p.x, oy: p.y, start: { x: frames[i].x, y: frames[i].y } }; refresh(); return; }
+  state.drag = { create: true, ox: p.x, oy: p.y, rect: null };
+});
+window.addEventListener('mousemove', e => {
+  if (!state.img) return;
+  const r = view.getBoundingClientRect(), p = toImg(e.clientX - r.left, e.clientY - r.top);
+  hover = { x: Math.floor(p.x), y: Math.floor(p.y) };
+  const d = state.drag;
+  if (d) {
+    if (d.pan) { state.panX = d.px + (e.clientX - r.left - d.sx); state.panY = d.py + (e.clientY - r.top - d.sy); }
+    else if (d.create || d.excl) d.rect = norm(d.ox, d.oy, p.x, p.y);
+    else if (d.move) { d.target.x = Math.round(d.start.x + p.x - d.ox); d.target.y = Math.round(d.start.y + p.y - d.oy); }
+    else if (d.resize) applyResize(d, p);
+  }
+  updateHud(); draw();
+});
+window.addEventListener('mouseup', e => {
+  const d = state.drag; if (!d) return; state.drag = null;
+  if (d.create && d.rect && d.rect.w >= 3 && d.rect.h >= 3) addFrame(d.rect);
+  else if (d.excl && d.rect && d.rect.w >= 2 && d.rect.h >= 2) { d.target.excl.push(clampTo(d.rect, d.target)); }
+  refresh();
+});
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.code === 'Space') { state.space = true; view.style.cursor = 'grab'; e.preventDefault(); return; }
+  const frames = state.frames[state.anim], f = frames[state.sel];
+  const step = e.shiftKey ? 10 : 1;
+  if (e.key === '[' || e.key === ']') { const i = ANIMS.findIndex(a => a[0] === state.anim); setAnim(ANIMS[(i + (e.key === ']' ? 1 : ANIMS.length - 1)) % ANIMS.length][0]); return; }
+  if (/^[1-9]$/.test(e.key)) { if (frames[Number(e.key) - 1]) { state.sel = Number(e.key) - 1; refresh(); } return; }
+  if (!f) return;
+  if (e.key === 'Delete' || e.key === 'Backspace') { frames.splice(state.sel, 1); state.sel = Math.min(state.sel, frames.length - 1); refresh(); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft') { if (e.ctrlKey) f.w -= step; else f.x -= step; refresh(); e.preventDefault(); }
+  else if (e.key === 'ArrowRight') { if (e.ctrlKey) f.w += step; else f.x += step; refresh(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { if (e.ctrlKey) f.h -= step; else f.y -= step; refresh(); e.preventDefault(); }
+  else if (e.key === 'ArrowDown') { if (e.ctrlKey) f.h += step; else f.y += step; refresh(); e.preventDefault(); }
+});
+window.addEventListener('keyup', e => { if (e.code === 'Space') { state.space = false; view.style.cursor = 'crosshair'; } });
+const inside = (p, f) => p.x >= f.x && p.x <= f.x + f.w && p.y >= f.y && p.y <= f.y + f.h;
+const norm = (x1, y1, x2, y2) => ({ x: Math.round(Math.min(x1, x2)), y: Math.round(Math.min(y1, y2)), w: Math.round(Math.abs(x2 - x1)), h: Math.round(Math.abs(y2 - y1)) });
+const clampTo = (r, f) => { const x = Math.max(r.x, f.x), y = Math.max(r.y, f.y), x2 = Math.min(r.x + r.w, f.x + f.w), y2 = Math.min(r.y + r.h, f.y + f.h); return { x, y, w: Math.max(1, x2 - x), h: Math.max(1, y2 - y) }; };
+function handleAt(f, p) {
+  const tol = 6 / state.zoom, near = (a, b) => Math.abs(a - b) <= tol;
+  const L = near(p.x, f.x), R = near(p.x, f.x + f.w), T = near(p.y, f.y), B = near(p.y, f.y + f.h);
+  const inX = p.x >= f.x - tol && p.x <= f.x + f.w + tol, inY = p.y >= f.y - tol && p.y <= f.y + f.h + tol;
+  if (!inX || !inY) return null;
+  if ((L || R) && (T || B)) return (L ? 'l' : 'r') + (T ? 't' : 'b');
+  if (L && inY) return 'l'; if (R && inY) return 'r'; if (T && inX) return 't'; if (B && inX) return 'b';
+  return null;
+}
+function applyResize(d, p) {
+  const s = d.start, t = d.target, dx = Math.round(p.x - d.ox), dy = Math.round(p.y - d.oy);
+  if (d.resize.includes('l')) { t.x = s.x + dx; t.w = Math.max(2, s.w - dx); }
+  if (d.resize.includes('r')) t.w = Math.max(2, s.w + dx);
+  if (d.resize.includes('t')) { t.y = s.y + dy; t.h = Math.max(2, s.h - dy); }
+  if (d.resize.includes('b')) t.h = Math.max(2, s.h + dy);
+}
+function addFrame(r) {
+  const f = { x: r.x, y: r.y, w: r.w, h: r.h, px: null, py: null, excl: [] };
+  // encolhe para a caixa real de pixels opacos dentro do retângulo
+  const box = opaqueBox(f);
+  if (box) Object.assign(f, box);
+  state.frames[state.anim].push(f); state.sel = state.frames[state.anim].length - 1; refresh();
+}
+function updateHud() {
+  const f = state.frames[state.anim][state.sel];
+  hud.textContent = `${state.imgName || ''} ${state.img ? state.img.width + '×' + state.img.height : ''}  zoom ${state.zoom.toFixed(2)}  cursor ${hover.x},${hover.y}` + (f ? `\nquadro ${state.sel + 1}: ${f.x},${f.y} ${f.w}×${f.h}` : '');
+}
+
+// ------------------------------------------------------------------ pixels
+let pixelCache = null;
+function pixels() {
+  if (pixelCache && pixelCache.img === state.img) return pixelCache;
+  const c = document.createElement('canvas'); c.width = state.img.width; c.height = state.img.height;
+  const x = c.getContext('2d'); x.drawImage(state.img, 0, 0);
+  pixelCache = { img: state.img, data: x.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height };
+  return pixelCache;
+}
+const alphaAt = (px, x, y) => (x < 0 || y < 0 || x >= px.w || y >= px.h) ? 0 : px.data[(y * px.w + x) * 4 + 3];
+function opaqueBox(f) {
+  const px = pixels(); let l = Infinity, t = Infinity, r = -1, b = -1;
+  for (let y = f.y; y < f.y + f.h; y++) for (let x = f.x; x < f.x + f.w; x++) if (alphaAt(px, x, y) >= 40) { l = Math.min(l, x); t = Math.min(t, y); r = Math.max(r, x); b = Math.max(b, y); }
+  return b < 0 ? null : { x: l, y: t, w: r - l + 1, h: b - t + 1 };
+}
+// Detecção automática: bandas por linhas vazias, quadros por colunas vazias.
+function detect() {
+  if (!state.img) return;
+  const px = pixels(), W = px.w, H = px.h, opaque = (x, y) => alphaAt(px, x, y) >= 40;
+  const rowHas = new Uint8Array(H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (opaque(x, y)) { rowHas[y] = 1; break; }
+  const out = [];
+  let y = 0;
+  while (y < H) {
+    while (y < H && !rowHas[y]) y++;
+    if (y >= H) break;
+    const top = y; let gap = 0, bottom = y;
+    while (y < H && gap < 4) { if (rowHas[y]) { gap = 0; bottom = y; } else gap++; y++; }
+    const colHas = new Uint8Array(W);
+    for (let x = 0; x < W; x++) for (let yy = top; yy <= bottom; yy++) if (opaque(x, yy)) { colHas[x] = 1; break; }
+    let x = 0;
+    while (x < W) {
+      while (x < W && !colHas[x]) x++;
+      if (x >= W) break;
+      const left = x; let g = 0, right = x;
+      while (x < W && g < 2) { if (colHas[x]) { g = 0; right = x; } else g++; x++; }
+      const box = opaqueBox({ x: left, y: top, w: right - left + 1, h: bottom - top + 1 });
+      if (box && box.w >= 4 && box.h >= 4) out.push(box);
+    }
+  }
+  state.detected = out; $('clear-detect').hidden = !out.length; draw();
+}
+$('detect').addEventListener('click', detect);
+$('clear-detect').addEventListener('click', () => { state.detected = []; $('clear-detect').hidden = true; draw(); });
+
+// ------------------------------------------------------------------ painel esquerdo
+function setAnim(key) { state.anim = key; state.sel = state.frames[key].length ? 0 : -1; refresh(); }
+function renderAnims() {
+  const el = $('anims'); el.textContent = '';
+  for (const [key, file, label, , , required] of ANIMS) {
+    const n = state.frames[key].length;
+    const div = document.createElement('div'); div.className = 'anim' + (key === state.anim ? ' active' : '');
+    div.innerHTML = `<b>${key}</b> <span>${label}</span> ${required && !n ? '<span class="req">obrigatória</span>' : ''} <span class="n">${n} ${file}</span>`;
+    div.addEventListener('click', () => setAnim(key));
+    el.appendChild(div);
+  }
+  $('cur-name').textContent = `(${state.anim})`;
+}
+function renderFrames() {
+  const el = $('frames'); el.textContent = '';
+  state.frames[state.anim].forEach((f, i) => {
+    const t = document.createElement('div'); t.className = 'thumb' + (i === state.sel ? ' sel' : '');
+    const c = document.createElement('canvas'); c.width = 52; c.height = 52;
+    if (state.img && f.w > 0 && f.h > 0) { const x = c.getContext('2d'); x.imageSmoothingEnabled = false; const s = Math.min(52 / f.w, 52 / f.h); x.drawImage(state.img, f.x, f.y, f.w, f.h, (52 - f.w * s) / 2, (52 - f.h * s) / 2, f.w * s, f.h * s); }
+    const n = document.createElement('span'); n.textContent = i + 1;
+    t.append(c, n); t.addEventListener('click', () => { state.sel = i; refresh(); });
+    el.appendChild(t);
+  });
+  const f = state.frames[state.anim][state.sel];
+  ['fx', 'fy', 'fw', 'fh', 'fpx', 'fpy'].forEach(id => { $(id).disabled = !f; });
+  if (f) { $('fx').value = f.x; $('fy').value = f.y; $('fw').value = f.w; $('fh').value = f.h; const a = anchorOf(f); $('fpx').value = Math.round(a.x); $('fpy').value = Math.round(a.y); }
+}
+[['fx', 'x'], ['fy', 'y'], ['fw', 'w'], ['fh', 'h'], ['fpx', 'px'], ['fpy', 'py']].forEach(([id, prop]) => $(id).addEventListener('change', () => { const f = state.frames[state.anim][state.sel]; if (f) { f[prop] = Number($(id).value); refresh(); } }));
+$('f-clear-anchor').addEventListener('click', () => { const f = state.frames[state.anim][state.sel]; if (f) { f.px = f.py = null; refresh(); } });
+$('f-clear-excl').addEventListener('click', () => { const f = state.frames[state.anim][state.sel]; if (f) { f.excl = []; refresh(); } });
+$('f-del').addEventListener('click', () => { const fr = state.frames[state.anim]; if (state.sel >= 0) { fr.splice(state.sel, 1); state.sel = Math.min(state.sel, fr.length - 1); refresh(); } });
+$('f-left').addEventListener('click', () => swap(-1)); $('f-right').addEventListener('click', () => swap(1));
+function swap(d) { const fr = state.frames[state.anim], i = state.sel, j = i + d; if (i < 0 || j < 0 || j >= fr.length) return; [fr[i], fr[j]] = [fr[j], fr[i]]; state.sel = j; refresh(); }
+
+// Dividir bloco fundido: corte nas colunas com menos pixels escuros (roupa/corpo) perto da divisão nominal.
+function splitFrame(f, parts) {
+  const px = pixels();
+  const darkCol = x => { let n = 0; for (let y = f.y; y < f.y + f.h; y++) { const i = (y * px.w + x) * 4; if (px.data[i + 3] >= 40 && (px.data[i] + px.data[i + 1] + px.data[i + 2]) / 3 < 110) n++; } return n; };
+  const step = f.w / parts, cuts = [f.x];
+  for (let p = 1; p < parts; p++) {
+    const nominal = f.x + p * step, win = Math.round(step * .45);
+    let best = Math.round(nominal), bestScore = Infinity;
+    for (let x = Math.round(nominal) - win; x <= Math.round(nominal) + win; x++) {
+      if (x <= cuts[cuts.length - 1] + step * .5 || x >= f.x + f.w - 4) continue;
+      const score = darkCol(x) * 3 + Math.abs(x - nominal) * .08;
+      if (score < bestScore) { bestScore = score; best = x; }
+    }
+    cuts.push(best);
+  }
+  cuts.push(f.x + f.w);
+  const out = [];
+  for (let p = 0; p < parts; p++) {
+    const r = { x: cuts[p], y: f.y, w: cuts[p + 1] - cuts[p], h: f.h };
+    const box = opaqueBox(r);
+    if (box) out.push({ ...box, px: null, py: null, excl: [] });
+  }
+  return out;
+}
+$('f-split').addEventListener('click', () => {
+  const fr = state.frames[state.anim], f = fr[state.sel];
+  if (!f || !state.img) return;
+  const parts = Math.max(2, Number($('split-n').value) || 2);
+  fr.splice(state.sel, 1, ...splitFrame(f, parts));
+  refresh();
+});
+function moveFrames(all) {
+  const to = $('move-to').value, fr = state.frames[state.anim];
+  if (state.sel < 0 || to === state.anim) return;
+  const moved = all ? fr.splice(state.sel) : fr.splice(state.sel, 1);
+  state.frames[to].push(...moved);
+  state.sel = Math.min(state.sel, fr.length - 1);
+  refresh();
+}
+$('f-move').addEventListener('click', () => moveFrames(false));
+$('f-move-rest').addEventListener('click', () => moveFrames(true));
+$('move-to').innerHTML = ANIMS.map(([k, , label]) => `<option value="${k}">${k} — ${label}</option>`).join('');
+
+// ------------------------------------------------------------------ célula / snippet / preview
+function cellAuto() {
+  const pad = Number($('cell-pad').value) || 0;
+  let w = 0, h = 0;
+  for (const key in state.frames) for (const f of state.frames[key]) { const a = anchorOf(f); w = Math.max(w, 2 * Math.max(a.x - f.x, f.x + f.w - a.x)); h = Math.max(h, a.y - f.y, f.h); }
+  $('cell-w').value = Math.ceil(w) + pad * 2; $('cell-h').value = Math.ceil(h) + pad * 2;
+}
+$('cell-auto').addEventListener('click', () => { cellAuto(); refresh(); });
+['cell-w', 'cell-h', 'cell-pad', 'game-h', 'char-id'].forEach(id => $(id).addEventListener('change', refresh));
+function cell() {
+  let w = Number($('cell-w').value), h = Number($('cell-h').value);
+  if (!w || !h) { cellAuto(); w = Number($('cell-w').value); h = Number($('cell-h').value); }
+  const pad = Number($('cell-pad').value) || 0;
+  return { w, h, pes: h - pad };
+}
+function bodyHeight() {
+  const idle = state.frames.idle.length ? state.frames.idle : Object.values(state.frames).find(a => a.length) || [];
+  return idle.length ? Math.round(idle.reduce((s, f) => s + (anchorOf(f).y - f.y), 0) / idle.length) : 0;
+}
+function snippet() {
+  const { w, h, pes } = cell(), alt = bodyHeight() || h, id = ($('char-id').value || 'personagem').trim();
+  const scale = (Number($('game-h').value) || 130) / alt;
+  const lines = [];
+  for (const [key, file, , fps, loop] of ANIMS) {
+    const n = state.frames[key].length;
+    if (!n) { if (key === 'block' && state.frames.idle.length) lines.push(`block: ['Idle.png', 1, 1, true]`); if (key === 'fall' && state.frames.jump.length) lines.push(`fall: ['Jump.png', ${state.frames.jump.length}, 6]`); continue; }
+    lines.push(`${key}: ['${file}', ${n}, ${fps}${loop ? ', true' : ''}]`);
+  }
+  return `spritesheet: folha('assets/${id}/', [${w}, ${h}], [${scale.toFixed(2)}, ${pes}, ${Math.round(w / 2)}, ${alt}], {\n  ${lines.join(', ')}\n})`;
+}
+function drawFrameInto(c, f, dx, dy, sc) {
+  // recorta o retângulo, apaga exclusões e desenha ancorado pelos pés em (dx, dy)
+  const a = anchorOf(f);
+  const off = document.createElement('canvas'); off.width = f.w; off.height = f.h;
+  const o = off.getContext('2d'); o.imageSmoothingEnabled = false;
+  o.drawImage(state.img, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
+  for (const e of f.excl) o.clearRect(e.x - f.x, e.y - f.y, e.w, e.h);
+  // remove semitransparência (bordas de IA) para pixel art limpa
+  const im = o.getImageData(0, 0, f.w, f.h); for (let i = 3; i < im.data.length; i += 4) im.data[i] = im.data[i] >= 40 ? 255 : 0; o.putImageData(im, 0, 0);
+  c.imageSmoothingEnabled = false;
+  c.drawImage(off, Math.round(dx - (a.x - f.x) * sc), Math.round(dy - (a.y - f.y) * sc), f.w * sc, f.h * sc);
+}
+let lastT = performance.now();
+function tickPreview(now) {
+  const dt = (now - lastT) / 1000; lastT = now;
+  pctx.clearRect(0, 0, preview.width, preview.height);
+  const frames = state.frames[state.anim];
+  if (state.img && frames.length) {
+    if (state.playing) state.pt += dt * (Number($('fps').value) || 10);
+    const f = frames[Math.floor(state.pt) % frames.length];
+    const { h } = cell(), sc = Math.min(1, 140 / Math.max(h, 1));
+    pctx.fillStyle = '#333'; pctx.fillRect(0, 150, preview.width, 1);
+    drawFrameInto(pctx, f, preview.width / 2, 150, sc);
+    pctx.fillStyle = '#ffd21e'; pctx.font = '11px system-ui'; pctx.fillText(`${state.anim} ${Math.floor(state.pt) % frames.length + 1}/${frames.length}`, 6, 14);
+  }
+  requestAnimationFrame(tickPreview);
+}
+$('play').addEventListener('click', () => { state.playing = !state.playing; });
+
+// ------------------------------------------------------------------ exportar / projeto
+$('export').addEventListener('click', () => {
+  if (!state.img) return alert('Carregue a folha primeiro.');
+  const { w, h, pes } = cell(), links = $('links'); links.textContent = '';
+  for (const [key, file] of ANIMS) {
+    const frames = state.frames[key];
+    if (!frames.length) continue;
+    const c = document.createElement('canvas'); c.width = w * frames.length; c.height = h;
+    const x = c.getContext('2d');
+    frames.forEach((f, i) => drawFrameInto(x, f, i * w + w / 2, pes, 1));
+    addLink(links, file, c.toDataURL('image/png'));
+  }
+  addLink(links, 'projeto.json', 'data:application/json;charset=utf-8,' + encodeURIComponent(projectJSON()));
+  addLink(links, 'CHARACTERS-trecho.txt', 'data:text/plain;charset=utf-8,' + encodeURIComponent(snippet()));
+  const all = document.createElement('button'); all.textContent = 'Baixar tudo'; all.addEventListener('click', () => links.querySelectorAll('a').forEach((a, i) => setTimeout(() => a.click(), i * 250)));
+  links.prepend(all);
+});
+function addLink(parent, name, href) { const a = document.createElement('a'); a.href = href; a.download = name; a.textContent = name; parent.appendChild(a); }
+function projectJSON() { return JSON.stringify({ imagem: state.imgName, id: $('char-id').value, celula: cell(), alturaJogo: Number($('game-h').value), frames: state.frames }, null, 1); }
+$('save-project').addEventListener('click', () => { const a = document.createElement('a'); a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(projectJSON()); a.download = ($('char-id').value || 'projeto') + '.projeto.json'; a.click(); });
+function loadProject(file) {
+  const r = new FileReader();
+  r.onload = () => { try { applyProject(JSON.parse(r.result)); } catch (e) { alert('Projeto inválido: ' + e.message); } };
+  r.readAsText(file);
+}
+function applyProject(p) {
+  if (p.frames) for (const key in state.frames) state.frames[key] = (p.frames[key] || []).map(f => ({ px: null, py: null, excl: [], ...f }));
+  if (p.id) $('char-id').value = p.id;
+  if (p.celula) { $('cell-w').value = p.celula.w; $('cell-h').value = p.celula.h; }
+  if (p.alturaJogo) $('game-h').value = p.alturaJogo;
+  state.sel = state.frames[state.anim].length ? 0 : -1; refresh();
+}
+$('load-project').addEventListener('change', e => loadProject(e.target.files[0]));
+function save() { try { localStorage.setItem('manifight-editor', projectJSON()); } catch (e) { /* sem armazenamento */ } }
+
+function refresh() { renderAnims(); renderFrames(); $('snippet').value = state.img ? snippet() : ''; updateHud(); draw(); save(); }
+try { const saved = localStorage.getItem('manifight-editor'); if (saved) applyProject(JSON.parse(saved)); } catch (e) { /* ignorar */ }
+fitView(); refresh(); requestAnimationFrame(tickPreview);
+</script>
+</body>
+</html>

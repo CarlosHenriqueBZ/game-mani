@@ -1,0 +1,89 @@
+{
+  "carol": {
+    "origem": "assets/huntress", "destino": "assets/chars/carol", "quadro": 150, "cabecaAte": 0.35,
+    "pele": ["#4c331e", "#3f2124"], "cabelo": ["#120a07", "#1f1613"],
+    "grupos": [
+      { "de": ["#120a07", "#1f1613"], "para": "#e6c15a", "contraste": 0.6 },
+      { "de": ["#4c331e", "#3f2124"], "para": "#eab994" },
+      { "de": ["#371a23"], "para": "#b8866a" },
+      { "de": ["#595818", "#554d20", "#504128", "#7e7d4b", "#625b3e", "#52523a", "#716f17"], "para": "#2fa596", "contraste": 0.9 }
+    ],
+    "acessorios": [ { "tipo": "rabo", "cor": "#e6c15a", "comprimento": 5, "largura": 2 } ]
+  },
+  "carlos": {
+    "origem": "assets/warrior", "destino": "assets/chars/carlos", "quadro": 184, "cabecaAte": 0.3,
+    "pele": ["#bb8f82", "#9a695b"], "cabelo": ["#040302"],
+    "grupos": [
+      { "de": ["#bb8f82", "#9a695b"], "para": "#8a5a3a" },
+      { "de": ["#652207", "#531a03"], "para": "#0fb8d6" },
+      { "de": ["#b68752"], "para": "#39ff88" },
+      { "de": ["#48372f", "#3e2e26"], "para": "#262b3f" },
+      { "de": ["#b1b1b1", "#787878", "#5e5e5e"], "para": "#5fe0ff", "contraste": 0.7 }
+    ],
+    "acessorios": [
+      { "tipo": "barbear", "ate": 5, "exigeCabelo": true },
+      { "tipo": "olhos", "cor": "#3fd66a", "exigeCabelo": true },
+      { "tipo": "dentes", "cor": "#ffffff", "exigeCabelo": true }
+    ]
+  },
+  "italo": {
+    "origem": "assets/evil-wizard", "destino": "assets/chars/italo", "quadro": 150, "cabecaAte": 0.45,
+    "pele": ["#fac786", "#d4a870"], "cabelo": [],
+    "grupos": [
+      { "de": ["#971a1a", "#b42626", "#bf0000", "#7a1212", "#7e1818"], "para": "#2f3fb0" },
+      { "de": ["#fac786", "#d4a870"], "para": "#f1d2b0" },
+      { "de": ["#ff0707"], "para": "#151515" },
+      { "de": ["#361b1b", "#4d2c2c"], "para": "#1a1a1e" }
+    ],
+    "acessorios": [ { "tipo": "cabelo", "cor": "#151515", "altura": 3 } ]
+  },
+  "raul": {
+    "origem": "assets/kenji", "destino": "assets/chars/raul", "quadro": 200, "cabecaAte": 0.35,
+    "pele": ["#a11324", "#881422", "#cd2c3f"], "cabelo": ["#08080d", "#171723"],
+    "grupos": [
+      { "de": ["#a11324", "#881422", "#cd2c3f"], "para": "#1b2340", "contraste": 0.6 },
+      { "de": ["#b47d55", "#c9a179"], "para": "#a86b45" },
+      { "de": ["#232774", "#333892", "#000334", "#1d1d39"], "para": "#262a36", "contraste": 0.7 },
+      { "de": ["#878790", "#a0a0ad"], "para": "#b02a2a" },
+      { "de": ["#1f0d60"], "para": "#8f96a3" }
+    ],
+    "acessorios": []
+  },
+  "luis": {
+    "origem": "assets/thief", "destino": "assets/chars/luis", "quadro": 150, "cabecaAte": 0.3,
+    "pele": ["#c69287", "#b97263"], "cabelo": ["#63391e", "#724326"],
+    "grupos": [
+      { "de": ["#c69287", "#b97263"], "para": "#e2b58f" },
+      { "de": ["#63391e", "#724326"], "para": "#a9804f" },
+      { "de": ["#ce1d39", "#8d0a37"], "para": "#c9e83a", "contraste": 0.8 },
+      { "de": ["#784046", "#481e26"], "para": "#1e1e26" },
+      { "de": ["#060e13", "#0b1d28"], "para": "#e8e8ee", "contraste": 0.5 },
+      { "de": ["#491613", "#270e0c"], "para": "#ff7a1a", "contraste": 0.6 }
+    ],
+    "acessorios": [ { "tipo": "oculos", "cor": "#1b1f3a", "lente": "#9fd8ff", "exigeCabelo": true } ]
+  },
+  "gabriel": {
+    "origem": "assets/martial-hero", "destino": "assets/chars/gabriel", "quadro": 200, "cabecaAte": 0.75,
+    "pele": ["#7c5969", "#9e7688", "#745663", "#9a7686"], "cabelo": ["#8a0b41", "#ce2038"],
+    "grupos": [
+      { "de": ["#8a0b41", "#ce2038"], "para": "#101014", "contraste": 0.5 },
+      { "de": ["#97828a", "#beacb3"], "para": "#e6e6ee", "contraste": 0.7 },
+      { "de": ["#7c5969", "#9e7688", "#745663", "#9a7686"], "para": "#e2b58f" },
+      { "de": ["#452432", "#4f2a3a"], "para": "#8a6a2e", "contraste": 0.8 },
+      { "de": ["#331a19", "#3c1e2b", "#4d2d2c", "#341a25", "#4f2a3a", "#5c3747"], "para": "#1e1e26", "contraste": 0.8 },
+      { "de": ["#442b61", "#5f4181", "#331685", "#432792"], "para": "#8a5a2b" }
+    ],
+    "acessorios": []
+  },
+  "tadeus": {
+    "origem": "assets/medieval-king", "destino": "assets/chars/tadeus", "quadro": 160, "cabecaAte": 0.3,
+    "pele": ["#ce9270", "#efb08d"], "cabelo": ["#3e1712", "#4f2520"],
+    "grupos": [
+      { "de": ["#0f4a7c", "#1f7ec1", "#17649f"], "para": "#b3956a" },
+      { "de": ["#be8420", "#daaf1c"], "para": "#3a2a1e", "contraste": 0.5 },
+      { "de": ["#540015", "#2a030d"], "para": "#2f333c" },
+      { "de": ["#949292", "#b4b4b4"], "para": "#6b4a2a" }
+    ],
+    "acessorios": [ { "tipo": "chapeu", "cor": "#26201c", "faixa": "#7a6650", "aba": 2, "copa": 3 } ]
+  }
+}
